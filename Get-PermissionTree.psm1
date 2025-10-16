@@ -8,6 +8,13 @@ function Get-PermissionTree {
         # Path to start from (Mandatory)
         [Parameter(Mandatory=$true)][string]$Path = ""
     )
+    
+    # Check if the path exists
+    if (-Not (Test-Path -Path $Path)) {
+        Write-Error "The specified path '$Path' does not exist."
+        return
+    }
+
     # Outputs
     Write-Host "Depth: $Depth"
     Write-Host "Path: $Path"
