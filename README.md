@@ -25,9 +25,22 @@
 ---
 
 ## Installation
-1. **Save the Module**:
-   Save the `Get-PermissionTree.psm1` file to a directory in your PowerShell module path (e.g., `$env:\Program Files\WindowsPowerShell\Modules\Get-PermissionTree`).
-
-2. **Import the Module**:
+1. **Create the Module**:
+   Create the `Get-PermissionTree.psm1` file in a directory in your PowerShell module path (e.g., `$env:\Program Files\WindowsPowerShell\Modules\Get-PermissionTree`) and copy-paste the code into it.
+2. **Set Execution Policy**:
+   To be able to use local scripts without a signature, you first have to set the execution policy on your Localmachine to `RemoteSigned`, if you haven't already.
+   ```powershell
+   Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
+3. **Import the Module**:
    ```powershell
    Import-Module Get-PermissionTree -Force
+
+---
+
+## Usage
+```powershell
+# Check permissions for the current user in the current path (depth 1)
+Get-PermissionTree
+
+# Check permissions for "John" in C:\Folder1 (depth 2)
+Get-PermissionTree -Path "C:\Folder1" -User "John" -Depth 2
