@@ -38,7 +38,7 @@ function Get-PermissionTree {
             $null = Get-ChildItem -Path $Path -ErrorAction Stop
         }
         catch {
-            Write-Output "$Indent$Path : [Access Denied]"
+            Write-Output "$Indent|__$Path : [Access Denied]"
             return
         }
 
@@ -47,14 +47,14 @@ function Get-PermissionTree {
             $acl = Get-Acl -Path $Path -ErrorAction Stop
         }
         catch {
-            Write-Output "$Indent$Path : [Access Denied]"
+            Write-Output "$Indent|__$Path : [Access Denied]"
             return
         }
 
         # Check if the user has any explicit permissions
         $permissions = $acl.Access | Where-Object { $_.IdentityReference -eq $fullUsername }
         if (-not $permissions) {
-            Write-Output "$Indent$Path : $User has no explicit permissions."
+            Write-Output "$Indent|__$Path : $User has no explicit permissions."
             return
         }
 
@@ -68,7 +68,7 @@ function Get-PermissionTree {
         }
 
         if (-not $hasReadAccess) {
-            Write-Output "$Indent$Path : [Access Denied - No Read Permission]"
+            Write-Output "$Indent|__$Path : [Access Denied - No Read Permission]"
             return
         }
 
@@ -93,7 +93,12 @@ function Get-PermissionTree {
         }
 
         # Print the current directory and its permissions
-        Write-Output "$Indent$Path : $User's Permissions: $($userPermissions -join ', ')"
+        if ($CurrentDepth -eq 0) {
+            Write-Output "$Indent|__$Path : $User's Permissions: $($userPermissions -join ', ')"
+        } else {
+            $folderName = Split-Path -Path $Path -Leaf
+            Write-Output "$Indent|__$folderName : $User's Permissions: $($userPermissions -join ', ')"
+        }
 
         # Recursively process subdirectories if we haven't reached the max depth
         if ($CurrentDepth -lt $Depth) {
@@ -104,7 +109,7 @@ function Get-PermissionTree {
                 }
             }
             catch {
-                Write-Output "$Indent  [Could not access subdirectories]"
+                Write-Output "$Indent    |__[Could not access subdirectories]"
             }
         }
     }
