@@ -33,17 +33,42 @@ function Get-PermissionTree {
             [string]$Indent = ""
         )
 
-        # Get the ACL for the current directory
-        $acl = Get-Acl -Path $Path -ErrorAction SilentlyContinue
-        if (-not $acl) {
-            Write-Output "$Indent$Path : [Access Denied]"
+        # Check if the user can actually access the directory
+        try {
+            $null = Get-ChildItem -Path $Path -ErrorAction Stop
+        }
+        catch {
+            Write-Output "$Indent|__$Path : [Access Denied]"
             return
         }
 
-        # Check if the user has any permissions
+        # Get the ACL for the current directory
+        try {
+            $acl = Get-Acl -Path $Path -ErrorAction Stop
+        }
+        catch {
+            Write-Output "$Indent|__$Path : [Access Denied]"
+            return
+        }
+
+        # Check if the user has any explicit permissions
         $permissions = $acl.Access | Where-Object { $_.IdentityReference -eq $fullUsername }
         if (-not $permissions) {
-            Write-Output "$Indent$Path : $User has no explicit permissions."
+            Write-Output "$Indent|__$Path : $User has no explicit permissions."
+            return
+        }
+
+        # Check if the user has at least read access
+        $hasReadAccess = $false
+        foreach ($permission in $permissions) {
+            if ($permission.FileSystemRights -band [System.Security.AccessControl.FileSystemRights]::Read) {
+                $hasReadAccess = $true
+                break
+            }
+        }
+
+        if (-not $hasReadAccess) {
+            Write-Output "$Indent|__$Path : [Access Denied - No Read Permission]"
             return
         }
 
@@ -51,24 +76,40 @@ function Get-PermissionTree {
         $userPermissions = @()
         foreach ($permission in $permissions) {
             if ($permission.FileSystemRights -band [System.Security.AccessControl.FileSystemRights]::Read) {
-                $userPermissions += "Read"
+                if (-not ($userPermissions -contains "Read")) {
+                    $userPermissions += "Read"
+                }
             }
             if ($permission.FileSystemRights -band [System.Security.AccessControl.FileSystemRights]::Write) {
-                $userPermissions += "Write"
+                if (-not ($userPermissions -contains "Write")) {
+                    $userPermissions += "Write"
+                }
             }
             if ($permission.FileSystemRights -band [System.Security.AccessControl.FileSystemRights]::ExecuteFile) {
-                $userPermissions += "Execute"
+                if (-not ($userPermissions -contains "Execute")) {
+                    $userPermissions += "Execute"
+                }
             }
         }
 
         # Print the current directory and its permissions
-        Write-Output "$Indent$Path : $User's Permissions: $($userPermissions -join ', ')"
+        if ($CurrentDepth -eq 0) {
+            Write-Output "$Indent|__$Path : $User's Permissions: $($userPermissions -join ', ')"
+        } else {
+            $folderName = Split-Path -Path $Path -Leaf
+            Write-Output "$Indent|__$folderName : $User's Permissions: $($userPermissions -join ', ')"
+        }
 
         # Recursively process subdirectories if we haven't reached the max depth
         if ($CurrentDepth -lt $Depth) {
-            $subDirectories = Get-ChildItem -Path $Path -Directory -ErrorAction SilentlyContinue
-            foreach ($subDir in $subDirectories) {
-                Get-DirectoryTree -Path $subDir.FullName -Depth $Depth -CurrentDepth ($CurrentDepth + 1) -Indent ("$Indent    ")
+            try {
+                $subDirectories = Get-ChildItem -Path $Path -Directory -ErrorAction Stop
+                foreach ($subDir in $subDirectories) {
+                    Get-DirectoryTree -Path $subDir.FullName -Depth $Depth -CurrentDepth ($CurrentDepth + 1) -Indent ("$Indent    ")
+                }
+            }
+            catch {
+                Write-Output "$Indent    |__[Could not access subdirectories]"
             }
         }
     }
