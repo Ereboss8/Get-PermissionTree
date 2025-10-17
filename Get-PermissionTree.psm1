@@ -1,12 +1,12 @@
 # Start of Get-PermissionTree.psm1
 function Get-PermissionTree {
     param(
-        # User to check permissions for (Standard: Current User)
+        # User to check permissions for (Default: Current User)
         [string]$User = $env:USERNAME,
-        # Depth for how deep the tree goes (Standard: 1)
+        # Depth for how deep the tree goes (Default: 1)
         [int]$Depth = 1,
-        # Path to start from (Mandatory)
-        [Parameter(Mandatory=$true)][string]$Path = ""
+        # Path to start from (Default: Current path)
+        [string]$Path = $PWD
     )
 
     # Check if the path exists
