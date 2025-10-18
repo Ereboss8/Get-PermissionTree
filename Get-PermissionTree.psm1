@@ -28,7 +28,6 @@ function Get-PermissionTree {
     $g_t = [char]0x251C    # ├ T-junction
     $g_l = [char]0x2514    # └ L-corner
     $g_v = [char]0x2502    # │ Vertical line
-    $g_h = [char]0x2500    # ─ Horizontal line
 
     # Recursively process directories and print permissions
     function Get-DirectoryTree {
